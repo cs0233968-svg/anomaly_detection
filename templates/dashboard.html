@@ -88,6 +88,17 @@
 <body>
     <h1>🔐 Corporate Anomaly Detection Dashboard</h1>
 
+    <div style="text-align: center; margin: 10px 0;">
+        <button id="startBtn" onclick="startCapture()" style="background:#00ff88; color:#1a1a2e; border:none; padding:10px 30px;
+            border-radius:5px; font-size:16px; cursor:pointer; margin:5px;">
+            ▶ Start Capture
+        </button>
+        <button id="stopBtn" onclick="stopCapture()" style="background:#e94560; color:white; border:none; padding:10px 30px;
+            border-radius:5px; font-size:16px; cursor:pointer; margin:5px;">
+            ⏹ Stop Capture
+        </button>
+    </div>
+
     <div class="cards">
         <div class="card">
             <p>Total Records</p>
@@ -190,6 +201,18 @@
             }
         }
         });
+
+        function startCapture() {
+            fetch('/start_capture')
+                .then(r => r.json())
+                .then(data => alert('Capture: ' + data.status));
+        }
+
+        function stopCapture() {
+            fetch('/stop_capture')
+                .then(r => r.json())
+                .then(data => alert('Capture: ' + data.status));
+        }
     </script>
 </body>
 
