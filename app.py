@@ -1,8 +1,12 @@
-from flask import Flask, render_template
+from flask import Flask, render_template, jsonify
 import pandas as pd
 import os
+import subprocess
+import sys
 
 app = Flask(__name__)
+
+capture_process = None
 
 @app.route("/")
 def dashboard():
@@ -28,7 +32,16 @@ def dashboard():
     high_count = len(anomaly_df[anomaly_df["severity"] == "HIGH"])
 
     anomaly_records = anomaly_df.to_dict("records")
-    all_records = df.to_dict("records")
+
+    anomalies_only = df[df["status"] == "ANOMALY"]
+    normal_only = df[df["status"] == "NORMAL"].tail(100)
+    all_records = pd.concat([anomalies_only, normal_only]).sort_index().to_dict("records")
+
+    if os.path.exists("login_logs.csv"):
+        login_df = pd.read_csv("login_logs.csv")
+        login_records = login_df.tail(20).to_dict("records")
+    else:
+        login_records = []
 
     return render_template(
         "dashboard.html",
@@ -39,8 +52,26 @@ def dashboard():
         all_records=all_records,
         low_count=low_count,
         medium_count=medium_count,
-        high_count=high_count
+        high_count=high_count,
+        login_records=login_records
     )
 
+@app.route("/start_capture")
+def start_capture():
+    global capture_process
+    if capture_process is None or capture_process.poll() is not None:
+        capture_process = subprocess.Popen([sys.executable, "live_capture.py"])
+        return jsonify({"status": "started"})
+    return jsonify({"status": "already running"})
+
+@app.route("/stop_capture")
+def stop_capture():
+    global capture_process
+    if capture_process and capture_process.poll() is None:
+        capture_process.terminate()
+        capture_process = None
+        return jsonify({"status": "stopped"})
+    return jsonify({"status": "not running"})
+
 if __name__ == "__main__":
-    app.run(debug=True)
+  app.run(debug=True, port=8080)

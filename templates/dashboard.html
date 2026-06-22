@@ -124,7 +124,25 @@
             <canvas id="barChart" width="250" height="250"></canvas>
         </div>
     </div>
-
+    <h2 style="color:#00b4d8">🔑 Login Activity</h2>
+    <table>
+        <tr>
+            <th>Time</th>
+            <th>Username</th>
+            <th>IP Address</th>
+            <th>Status</th>
+        </tr>
+        {% for record in login_records %}
+        <tr style="background-color: {% if record.status == 'FAILED' %}#2d0a0a{% else %}transparent{% endif %}">
+            <td>{{ record.time }}</td>
+            <td>{{ record.username }}</td>
+            <td>{{ record.ip_address }}</td>
+            <td style="color: {% if record.status == 'FAILED' %}#e94560{% else %}#00ff88{% endif %}">
+                {{ record.status }}
+            </td>
+        </tr>
+        {% endfor %}
+    </table>
     <h2 style="color:#e94560">⚠️ All Network Records</h2>
     <table>
         <tr>
