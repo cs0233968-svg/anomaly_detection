@@ -12,9 +12,18 @@ SENDER_EMAIL = "cs0233968@gmail.com"
 RECEIVER_EMAIL = "cs0233968@gmail.com"
 APP_PASSWORD = "uuysetmckeighttm"
 
-# ─── Load Trained Model ─────────────────────────────────────
+# ─── Load Model, Scaler and Features ────────────────────────
 with open("model.pkl", "rb") as f:
     model = pickle.load(f)
+
+with open("scaler.pkl", "rb") as f:
+    scaler = pickle.load(f)
+
+with open("cicids_features.pkl", "rb") as f:
+    features = pickle.load(f)
+
+print("Model loaded: CICIDS2017 Isolation Forest")
+print(f"Features: {len(features)} features")
 
 # ─── Auto Detect WiFi Interface ─────────────────────────────
 def get_wifi_interface():
@@ -48,7 +57,7 @@ Protocol       : {protocol}
 Severity       : {severity}
 Time           : {datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
 
--- Sentinel Anomaly Detection System
+-- Sentinel Anomaly Detection System (CICIDS2017 Model)
     """
 
     msg = MIMEMultipart()
@@ -81,29 +90,44 @@ def analyze_packet(packet):
         # Detect protocol
         if TCP in packet:
             protocol = "TCP"
+            fwd_packets = packet[TCP].seq % 20 + 1
+            bwd_packets = packet[TCP].ack % 15 + 1
         elif UDP in packet:
             protocol = "UDP"
+            fwd_packets = 3
+            bwd_packets = 2
         elif ICMP in packet:
             protocol = "ICMP"
-        elif ARP in packet:
-            protocol = "ARP"
+            fwd_packets = 1
+            bwd_packets = 1
         else:
             protocol = "OTHER"
+            fwd_packets = 1
+            bwd_packets = 0
 
-        # Prepare features for model
+        # Build CICIDS2017 style features
         record = {
-            "login_attempts": 0,
-            "network_traffic_mb": size / 1024,
-            "data_transfer_gb": size / (1024 * 1024),
-            "hour_of_day": hour
+            "Flow Duration":         size * 10,
+            "Total Fwd Packets":     fwd_packets,
+            "Total Bwd Packets":     bwd_packets,
+            "Fwd Packet Length Max": size,
+            "Bwd Packet Length Max": size // 2,
+            "Flow Bytes/s":          size * 100.0,
+            "Flow Packets/s":        fwd_packets * 10.0,
+            "Flow IAT Mean":         size * 5.0,
+            "Fwd IAT Mean":          size * 3.0,
+            "Bwd IAT Mean":          size * 2.0,
+            "Packet Length Mean":    size / 2.0,
+            "Packet Length Std":     size / 4.0,
         }
 
-        # Predict anomaly
-        df = pd.DataFrame([record])
-        prediction = model.predict(df)[0]
+        # Scale and predict
+        df = pd.DataFrame([record])[features]
+        df_scaled = scaler.transform(df)
+        prediction = model.predict(df_scaled)[0]
         status = "ANOMALY" if prediction == -1 else "NORMAL"
 
-        # Assign severity based on packet size
+        # Assign severity
         if size > 1000:
             severity = "HIGH"
         elif size > 500:
@@ -113,18 +137,23 @@ def analyze_packet(packet):
 
         print(f"[{status}] {src_ip} → {dst_ip} | {protocol} | {size} bytes | {severity}")
 
-        # Send email alert only for anomalies
+        # Send email for anomalies
         if status == "ANOMALY":
             send_alert_email(src_ip, dst_ip, protocol, severity)
 
-        # Store full record
-        record["employee_id"] = src_ip
-        record["src_ip"] = src_ip
-        record["dst_ip"] = dst_ip
-        record["protocol"] = protocol
-        record["status"] = status
-        record["severity"] = severity
-        captured.append(record)
+        # Store record
+        full_record = {
+            "employee_id": src_ip,
+            "src_ip": src_ip,
+            "dst_ip": dst_ip,
+            "protocol": protocol,
+            "network_traffic_mb": size / 1024,
+            "data_transfer_gb": size / (1024 * 1024),
+            "hour_of_day": hour,
+            "status": status,
+            "severity": severity
+        }
+        captured.append(full_record)
 
         # Save every 10 packets
         if len(captured) % 10 == 0:
@@ -132,7 +161,7 @@ def analyze_packet(packet):
             print(f"--- Saved {len(captured)} packets ---")
 
 # ─── Start Capture ───────────────────────────────────────────
-print("Starting live capture...")
+print("\nStarting live capture with CICIDS2017 model...")
 print("Press Ctrl+C to stop\n")
 
 try:
