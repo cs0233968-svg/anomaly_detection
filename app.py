@@ -5,7 +5,12 @@ import subprocess
 import sys
 
 app = Flask(__name__)
-
+# Clear old data on every restart
+if os.path.exists("live_results.csv"):
+    os.remove("live_results.csv")
+if os.path.exists("login_logs.csv"):
+    os.remove("login_logs.csv")
+    
 capture_process = None
 
 @app.route("/")
