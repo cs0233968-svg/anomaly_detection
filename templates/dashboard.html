@@ -1,10 +1,16 @@
 <!DOCTYPE html>
 <html>
+
 <head>
     <title>Anomaly Detection Dashboard</title>
-    <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Inter:wght@400;600&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Inter:wght@400;600&display=swap"
+        rel="stylesheet">
     <style>
-        * { box-sizing: border-box; margin: 0; padding: 0; }
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
 
         body {
             font-family: 'Inter', sans-serif;
@@ -46,8 +52,17 @@
         }
 
         @keyframes pulse {
-            0%, 100% { opacity: 1; box-shadow: 0 0 0 0 rgba(0,255,136,0.4); }
-            50% { opacity: 0.7; box-shadow: 0 0 0 6px rgba(0,255,136,0); }
+
+            0%,
+            100% {
+                opacity: 1;
+                box-shadow: 0 0 0 0 rgba(0, 255, 136, 0.4);
+            }
+
+            50% {
+                opacity: 0.7;
+                box-shadow: 0 0 0 6px rgba(0, 255, 136, 0);
+            }
         }
 
         .clock {
@@ -68,11 +83,20 @@
             animation: blink-border 1s infinite;
         }
 
-        .alert-banner.show { display: block; }
+        .alert-banner.show {
+            display: block;
+        }
 
         @keyframes blink-border {
-            0%, 100% { border-left-color: #e94560; }
-            50% { border-left-color: transparent; }
+
+            0%,
+            100% {
+                border-left-color: #e94560;
+            }
+
+            50% {
+                border-left-color: transparent;
+            }
         }
 
         /* CONTROLS */
@@ -93,9 +117,20 @@
             transition: transform 0.1s, opacity 0.2s;
         }
 
-        .btn:hover { transform: translateY(-1px); opacity: 0.9; }
-        .btn-start { background: #00ff88; color: #0d0d1a; }
-        .btn-stop { background: #e94560; color: white; }
+        .btn:hover {
+            transform: translateY(-1px);
+            opacity: 0.9;
+        }
+
+        .btn-start {
+            background: #00ff88;
+            color: #0d0d1a;
+        }
+
+        .btn-stop {
+            background: #e94560;
+            color: white;
+        }
 
         /* STAT CARDS */
         .cards {
@@ -120,13 +155,23 @@
         .card::before {
             content: '';
             position: absolute;
-            top: 0; left: 0; right: 0;
+            top: 0;
+            left: 0;
+            right: 0;
             height: 3px;
         }
 
-        .card.total::before { background: #00b4d8; }
-        .card.normal::before { background: #00ff88; }
-        .card.anomaly::before { background: #e94560; }
+        .card.total::before {
+            background: #00b4d8;
+        }
+
+        .card.normal::before {
+            background: #00ff88;
+        }
+
+        .card.anomaly::before {
+            background: #e94560;
+        }
 
         .card p {
             font-size: 12px;
@@ -142,9 +187,17 @@
             font-weight: 400;
         }
 
-        .card.total h2 { color: #00b4d8; }
-        .card.normal h2 { color: #00ff88; }
-        .card.anomaly h2 { color: #e94560; }
+        .card.total h2 {
+            color: #00b4d8;
+        }
+
+        .card.normal h2 {
+            color: #00ff88;
+        }
+
+        .card.anomaly h2 {
+            color: #e94560;
+        }
 
         /* CHARTS */
         .charts {
@@ -186,8 +239,13 @@
             border-bottom: 1px solid #1e1e3a;
         }
 
-        .section-title.blue { color: #00b4d8; }
-        .section-title.red { color: #e94560; }
+        .section-title.blue {
+            color: #00b4d8;
+        }
+
+        .section-title.red {
+            color: #e94560;
+        }
 
         table {
             width: 100%;
@@ -213,9 +271,13 @@
             font-size: 12px;
         }
 
-        tr:hover td { background: #13132a; }
+        tr:hover td {
+            background: #13132a;
+        }
 
-        tr.anomaly-row td { background: rgba(233,69,96,0.07); }
+        tr.anomaly-row td {
+            background: rgba(233, 69, 96, 0.07);
+        }
 
         .badge {
             display: inline-block;
@@ -225,15 +287,43 @@
             font-weight: 600;
         }
 
-        .badge-anomaly { background: rgba(233,69,96,0.2); color: #e94560; }
-        .badge-normal { background: rgba(0,255,136,0.15); color: #00ff88; }
-        .badge-high { background: rgba(233,69,96,0.2); color: #e94560; }
-        .badge-medium { background: rgba(255,165,0,0.2); color: #ffa500; }
-        .badge-low { background: rgba(255,255,0,0.1); color: #ffff00; }
-        .badge-failed { background: rgba(233,69,96,0.2); color: #e94560; }
-        .badge-success { background: rgba(0,255,136,0.15); color: #00ff88; }
+        .badge-anomaly {
+            background: rgba(233, 69, 96, 0.2);
+            color: #e94560;
+        }
+
+        .badge-normal {
+            background: rgba(0, 255, 136, 0.15);
+            color: #00ff88;
+        }
+
+        .badge-high {
+            background: rgba(233, 69, 96, 0.2);
+            color: #e94560;
+        }
+
+        .badge-medium {
+            background: rgba(255, 165, 0, 0.2);
+            color: #ffa500;
+        }
+
+        .badge-low {
+            background: rgba(255, 255, 0, 0.1);
+            color: #ffff00;
+        }
+
+        .badge-failed {
+            background: rgba(233, 69, 96, 0.2);
+            color: #e94560;
+        }
+
+        .badge-success {
+            background: rgba(0, 255, 136, 0.15);
+            color: #00ff88;
+        }
     </style>
 </head>
+
 <body>
 
     <!-- TOP BAR -->
@@ -299,19 +389,22 @@
             </thead>
             <tbody>
                 {% for record in login_records %}
-                <tr {% if record.status == 'FAILED' %}class="anomaly-row"{% endif %}>
+                <tr {% if record.status=='FAILED' %}class="anomaly-row" {% endif %}>
                     <td>{{ record.time }}</td>
                     <td>{{ record.username }}</td>
                     <td>{{ record.ip_address }}</td>
                     <td>
-                        <span class="badge {% if record.status == 'FAILED' %}badge-failed{% else %}badge-success{% endif %}">
+                        <span
+                            class="badge {% if record.status == 'FAILED' %}badge-failed{% else %}badge-success{% endif %}">
                             {{ record.status }}
                         </span>
                     </td>
                 </tr>
                 {% endfor %}
                 {% if not login_records %}
-                <tr><td colspan="4" style="text-align:center; color:#8892a4; padding:20px;">No login records yet</td></tr>
+                <tr>
+                    <td colspan="4" style="text-align:center; color:#8892a4; padding:20px;">No login records yet</td>
+                </tr>
                 {% endif %}
             </tbody>
         </table>
@@ -335,12 +428,12 @@
             </thead>
             <tbody>
                 {% for record in all_records %}
-                <tr {% if record.status == 'ANOMALY' %}class="anomaly-row"{% endif %}>
+                <tr {% if record.status=='ANOMALY' %}class="anomaly-row" {% endif %}>
                     <td>{{ record.employee_id }}</td>
                     <td>{{ record.get('dst_ip', '-') }}</td>
                     <td>{{ record.get('protocol', '-') }}</td>
                     <td>{{ record.network_traffic_mb | round(4) }}</td>
-                    <td>{{ record.data_transfer_gb | round(6) }}</td>
+                    <td>{{ "%.4f" | format(record.data_transfer_gb) }} GB</td>
                     <td>{{ record.hour_of_day }}</td>
                     <td>
                         <span class="badge
@@ -351,14 +444,18 @@
                         </span>
                     </td>
                     <td>
-                        <span class="badge {% if record.status == 'ANOMALY' %}badge-anomaly{% else %}badge-normal{% endif %}">
+                        <span
+                            class="badge {% if record.status == 'ANOMALY' %}badge-anomaly{% else %}badge-normal{% endif %}">
                             {{ record.status }}
                         </span>
                     </td>
                 </tr>
                 {% endfor %}
                 {% if not all_records %}
-                <tr><td colspan="8" style="text-align:center; color:#8892a4; padding:20px;">No packets captured yet — click Start Capture</td></tr>
+                <tr>
+                    <td colspan="8" style="text-align:center; color:#8892a4; padding:20px;">No packets captured yet —
+                        click Start Capture</td>
+                </tr>
                 {% endif %}
             </tbody>
         </table>
@@ -385,15 +482,15 @@
                 labels: ['Normal', 'Anomalies'],
                 datasets: [{
                     data: [{{ normal }}, {{ anomalies }}],
-                    backgroundColor: ['#00ff88', '#e94560'],
-                    borderWidth: 0,
-                    hoverOffset: 6
-                }]
+            backgroundColor: ['#00ff88', '#e94560'],
+            borderWidth: 0,
+            hoverOffset: 6
+        }]
             },
             options: {
-                plugins: { legend: { labels: { color: '#c9d1e0', font: { size: 12 } } } },
-                cutout: '60%'
-            }
+            plugins: { legend: { labels: { color: '#c9d1e0', font: { size: 12 } } } },
+            cutout: '60%'
+        }
         });
 
         // Bar chart
@@ -404,18 +501,18 @@
                 datasets: [{
                     label: 'Count',
                     data: [{{ low_count }}, {{ medium_count }}, {{ high_count }}],
-                    backgroundColor: ['rgba(255,255,0,0.7)', 'rgba(255,165,0,0.7)', 'rgba(233,69,96,0.8)'],
-                    borderWidth: 0,
-                    borderRadius: 4
+            backgroundColor: ['rgba(255,255,0,0.7)', 'rgba(255,165,0,0.7)', 'rgba(233,69,96,0.8)'],
+            borderWidth: 0,
+            borderRadius: 4
                 }]
             },
             options: {
-                plugins: { legend: { display: false } },
-                scales: {
-                    x: { ticks: { color: '#8892a4' }, grid: { color: '#1e1e3a' } },
-                    y: { ticks: { color: '#8892a4' }, grid: { color: '#1e1e3a' } }
-                }
+            plugins: { legend: { display: false } },
+            scales: {
+                x: { ticks: { color: '#8892a4' }, grid: { color: '#1e1e3a' } },
+                y: { ticks: { color: '#8892a4' }, grid: { color: '#1e1e3a' } }
             }
+        }
         });
 
         function startCapture() {
@@ -439,4 +536,5 @@
         }
     </script>
 </body>
+
 </html>

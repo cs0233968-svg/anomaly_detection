@@ -1,0 +1,1 @@
+{"results": {"Isolation Forest": 80.74, "Random Forest": 100.0, "Local Outlier Factor": 67.6}, "best_model": "Random Forest", "best_accuracy": 100.0}
