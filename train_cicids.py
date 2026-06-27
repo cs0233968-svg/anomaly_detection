@@ -38,7 +38,7 @@ X_scaled = scaler.fit_transform(X)
 print("Training Isolation Forest on CICIDS2017...")
 model = IsolationForest(
     n_estimators=200,
-    contamination=0.2,
+    contamination=0.05,
     random_state=42,
     n_jobs=-1
 )
