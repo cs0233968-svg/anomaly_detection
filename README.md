@@ -150,17 +150,13 @@ Sentinel uses ip-api.com for real-time IP geolocation.
 - Security research
 - Academic cybersecurity projects
 
----
-
-## Author
-
-Chandveer Singh
-BSc Cybersecurity, First Year
-Chandigarh Group of Colleges, Jhanjeri
-Google Cybersecurity Certificate | HTB Student
-
----
-
 ## License
 
-MIT License — Free to use and modify
+Copyright (c) 2026 Chandveer Singh. All Rights Reserved.
+
+This software and its source code are proprietary and confidential.
+Unauthorized copying, modification, distribution, or use of this
+software, in whole or in part, without written permission from the
+author is strictly prohibited.
+
+For licensing inquiries contact: cs0233968@gmail.com
