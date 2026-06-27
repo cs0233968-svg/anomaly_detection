@@ -3,7 +3,9 @@ import pandas as pd
 import pickle
 import datetime
 import os
+import time
 import smtplib
+import requests
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 
@@ -12,7 +14,14 @@ SENDER_EMAIL = "cs0233968@gmail.com"
 RECEIVER_EMAIL = "cs0233968@gmail.com"
 APP_PASSWORD = "uuysetmckeighttm"
 
-# ─── Load Model, Scaler and Features ────────────────────────
+# ─── Email Cooldown ─────────────────────────────────────────
+last_email_time = 0
+EMAIL_COOLDOWN = 300
+
+# ─── Geo IP Cache ───────────────────────────────────────────
+geo_cache = {}
+
+# ─── Load Model ─────────────────────────────────────────────
 with open("model.pkl", "rb") as f:
     model = pickle.load(f)
 
@@ -22,8 +31,7 @@ with open("scaler.pkl", "rb") as f:
 with open("cicids_features.pkl", "rb") as f:
     features = pickle.load(f)
 
-print("Model loaded: CICIDS2017 Isolation Forest")
-print(f"Features: {len(features)} features")
+print("Model loaded: CICIDS2017 Random Forest")
 
 # ─── Auto Detect WiFi Interface ─────────────────────────────
 def get_wifi_interface():
@@ -45,19 +53,100 @@ if os.path.exists("live_results.csv"):
     os.remove("live_results.csv")
     print("Old data cleared!")
 
-# ─── Email Alert Function ────────────────────────────────────
-def send_alert_email(src_ip, dst_ip, protocol, severity):
-    subject = "🚨 ANOMALY DETECTED - Sentinel Alert"
+# ─── Flag Emoji ─────────────────────────────────────────────
+def get_flag(country_code):
+    flags = {
+        "IN": "🇮🇳", "US": "🇺🇸", "CN": "🇨🇳", "RU": "🇷🇺",
+        "DE": "🇩🇪", "GB": "🇬🇧", "FR": "🇫🇷", "JP": "🇯🇵",
+        "KR": "🇰🇷", "BR": "🇧🇷", "AU": "🇦🇺", "CA": "🇨🇦",
+        "NL": "🇳🇱", "SG": "🇸🇬", "HK": "🇭🇰", "IT": "🇮🇹",
+        "ES": "🇪🇸", "SE": "🇸🇪", "NO": "🇳🇴", "PK": "🇵🇰",
+        "IR": "🇮🇷", "UA": "🇺🇦", "TR": "🇹🇷", "LN": "🏠"
+    }
+    return flags.get(country_code, "🌐")
+
+# ─── Geo IP Lookup ───────────────────────────────────────────
+def get_geo_ip(ip):
+    # Skip private IPs
+    if (ip.startswith("192.168.") or
+        ip.startswith("10.") or
+        ip.startswith("172.") or
+        ip.startswith("127.") or
+        ip.startswith("224.") or
+        ip.startswith("255.")):
+        return {
+            "country": "Local Network",
+            "country_code": "LN",
+            "city": "Private",
+            "flag": "🏠"
+        }
+
+    # Check cache first
+    if ip in geo_cache:
+        return geo_cache[ip]
+
+    try:
+        response = requests.get(
+            f"http://ip-api.com/json/{ip}",
+            timeout=5
+        )
+        data = response.json()
+
+        if data["status"] == "success":
+            country_code = data.get("countryCode", "??")
+            result = {
+                "country": data.get("country", "Unknown"),
+                "country_code": country_code,
+                "city": data.get("city", "Unknown"),
+                "flag": get_flag(country_code)
+            }
+        else:
+            result = {
+                "country": "Unknown",
+                "country_code": "??",
+                "city": "Unknown",
+                "flag": "🌐"
+            }
+
+        geo_cache[ip] = result
+        return result
+
+    except:
+        return {
+            "country": "Unknown",
+            "country_code": "??",
+            "city": "Unknown",
+            "flag": "🌐"
+        }
+
+# ─── High Risk Countries ─────────────────────────────────────
+HIGH_RISK_COUNTRIES = ["CN", "RU", "KP", "IR"]
+
+# ─── Email Alert ─────────────────────────────────────────────
+def send_alert_email(src_ip, dst_ip, protocol, severity, country, city):
+    global last_email_time
+
+    current_time = time.time()
+    if current_time - last_email_time < EMAIL_COOLDOWN:
+        remaining = int(EMAIL_COOLDOWN - (current_time - last_email_time))
+        print(f"📧 Cooldown active — next email in {remaining}s")
+        return
+
+    last_email_time = current_time
+
+    subject = f"🚨 ANOMALY DETECTED - Sentinel Alert [{country}]"
     body = f"""
 ⚠️ ANOMALY DETECTED on your network!
 
 Source IP      : {src_ip}
+Location       : {city}, {country}
 Destination IP : {dst_ip}
 Protocol       : {protocol}
 Severity       : {severity}
 Time           : {datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
 
--- Sentinel Anomaly Detection System (CICIDS2017 Model)
+Note: Max 1 alert per 5 minutes.
+-- Sentinel Anomaly Detection System
     """
 
     msg = MIMEMultipart()
@@ -72,7 +161,7 @@ Time           : {datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
         server.login(SENDER_EMAIL, APP_PASSWORD)
         server.sendmail(SENDER_EMAIL, RECEIVER_EMAIL, msg.as_string())
         server.quit()
-        print(f"📧 Alert email sent for {src_ip}!")
+        print(f"📧 Alert sent! [{country}] {src_ip}")
     except Exception as e:
         print(f"Email error: {e}")
 
@@ -87,7 +176,6 @@ def analyze_packet(packet):
         size = len(packet)
         hour = datetime.datetime.now().hour
 
-        # Detect protocol
         if TCP in packet:
             protocol = "TCP"
             fwd_packets = packet[TCP].seq % 20 + 1
@@ -105,7 +193,14 @@ def analyze_packet(packet):
             fwd_packets = 1
             bwd_packets = 0
 
-        # Build CICIDS2017 style features
+        # Geo IP lookup
+        geo = get_geo_ip(src_ip)
+        country = geo["country"]
+        country_code = geo["country_code"]
+        city = geo["city"]
+        flag = geo["flag"]
+
+        # ML prediction
         record = {
             "Flow Duration":         size * 10,
             "Total Fwd Packets":     fwd_packets,
@@ -121,27 +216,31 @@ def analyze_packet(packet):
             "Packet Length Std":     size / 4.0,
         }
 
-        # Scale and predict
         df = pd.DataFrame([record])[features]
         df_scaled = scaler.transform(df)
         prediction = model.predict(df_scaled)[0]
-        status = "ANOMALY" if prediction == -1 else "NORMAL"
 
-        # Assign severity
-        if size > 1000:
+        if prediction not in [-1, 1]:
+            status = "ANOMALY" if prediction == 1 else "NORMAL"
+        else:
+            status = "ANOMALY" if prediction == -1 else "NORMAL"
+
+        # Auto HIGH for high risk countries
+        if country_code in HIGH_RISK_COUNTRIES:
+            severity = "HIGH"
+            status = "ANOMALY"
+        elif size > 1000:
             severity = "HIGH"
         elif size > 500:
             severity = "MEDIUM"
         else:
             severity = "LOW"
 
-        print(f"[{status}] {src_ip} → {dst_ip} | {protocol} | {size} bytes | {severity}")
+        print(f"[{status}] {flag} {src_ip} ({city}, {country}) → {dst_ip} | {protocol} | {size}b | {severity}")
 
-        # Send email for anomalies
         if status == "ANOMALY":
-            send_alert_email(src_ip, dst_ip, protocol, severity)
+            send_alert_email(src_ip, dst_ip, protocol, severity, country, city)
 
-        # Store record
         full_record = {
             "employee_id": src_ip,
             "src_ip": src_ip,
@@ -151,17 +250,22 @@ def analyze_packet(packet):
             "data_transfer_gb": size / (1024 * 1024),
             "hour_of_day": hour,
             "status": status,
-            "severity": severity
+            "severity": severity,
+            "country": country,
+            "country_code": country_code,
+            "city": city,
+            "flag": flag,
+            "timestamp": datetime.datetime.now().strftime('%H:%M:%S')
         }
         captured.append(full_record)
 
-        # Save every 10 packets
         if len(captured) % 10 == 0:
             pd.DataFrame(captured).to_csv("live_results.csv", index=False)
             print(f"--- Saved {len(captured)} packets ---")
 
 # ─── Start Capture ───────────────────────────────────────────
-print("\nStarting live capture with CICIDS2017 model...")
+print("\nStarting live capture with Geo IP...")
+print("Email cooldown: 1 alert per 5 minutes")
 print("Press Ctrl+C to stop\n")
 
 try:

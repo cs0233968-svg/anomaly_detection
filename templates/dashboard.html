@@ -416,7 +416,10 @@
         <table>
             <thead>
                 <tr>
+                    <th>Flag</th>
                     <th>Source IP</th>
+                    <th>Country</th>
+                    <th>City</th>
                     <th>Destination IP</th>
                     <th>Protocol</th>
                     <th>Traffic (MB)</th>
@@ -429,7 +432,10 @@
             <tbody>
                 {% for record in all_records %}
                 <tr {% if record.status=='ANOMALY' %}class="anomaly-row" {% endif %}>
+                    <td>{{ record.get('flag', '🌐') }}</td>
                     <td>{{ record.employee_id }}</td>
+                    <td>{{ record.get('country', 'Unknown') }}</td>
+                    <td>{{ record.get('city', 'Unknown') }}</td>
                     <td>{{ record.get('dst_ip', '-') }}</td>
                     <td>{{ record.get('protocol', '-') }}</td>
                     <td>{{ record.network_traffic_mb | round(4) }}</td>
